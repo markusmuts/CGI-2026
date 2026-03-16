@@ -14,23 +14,20 @@ public class Table {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private int tableNumber;
     private int capacity;
-    
-    // Coordinates for the table's position in the restaurant
-    private double xPos;
-    private double yPos;
-    
-    // Features (Window, Privacy etc.)
+
     @ElementCollection
     private Set<String> features;
 
-    public Table(int tableNumber, int capacity, double xPos, double yPos, Set<String> features) {
+    protected Table() {
+        // Required by JPA
+    }
+
+    public Table(int tableNumber, int capacity, Set<String> features) {
         this.tableNumber = tableNumber;
         this.capacity = capacity;
-        this.xPos = xPos;
-        this.yPos = yPos;
         this.features = features;
     }
 
@@ -56,22 +53,6 @@ public class Table {
 
     public void setCapacity(int capacity) {
         this.capacity = capacity;
-    }
-
-    public double getXPos() {
-        return xPos;
-    }
-
-    public void setXPos(double xPos) {
-        this.xPos = xPos;
-    }
-
-    public double getYPos() {
-        return yPos;
-    }
-
-    public void setYPos(double yPos) {
-        this.yPos = yPos;
     }
 
     public Set<String> getFeatures() {

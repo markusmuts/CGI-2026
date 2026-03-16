@@ -21,6 +21,10 @@ public class Reservation {
     private LocalDateTime endTime;
     private int guestCount;
 
+    protected Reservation() {
+        // Required by JPA
+    }
+
     public Reservation(Table table, LocalDateTime startTime, LocalDateTime endTime, int guestCount) {
         this.table = table;
         this.startTime = startTime;

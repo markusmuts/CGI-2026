@@ -182,3 +182,27 @@
     border-right-color: var(--border);
   }
 }
+
+/* Custom styles made by AI for error handling */
+.error-message {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #b00020;
+  font-weight: 600;
+}
+
+.error-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #d32f2f;
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  flex-shrink: 0;
+}
