@@ -1,5 +1,7 @@
 package com.cgi.backend.config;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,6 +23,18 @@ import com.cgi.backend.repository.TableRepository;
 @Configuration
 public class DataSeeder {
 
+    private static final int TABLE_COUNT = 10;
+    private static final int OPENING_HOUR = 9;
+    private static final int WEEKDAY_CLOSING_HOUR = 22;
+    private static final int WEEKEND_CLOSING_HOUR = 23;
+    private static final int SEEDING_WINDOW_DAYS = 21;
+    private static final int WEEKDAY_RESERVATIONS_PER_DAY = 42;
+    private static final int WEEKEND_RESERVATIONS_PER_DAY = 60;
+    private static final int MORNING_LUNCH_DURATION_MINUTES = 90;
+    private static final int EVENING_DURATION_MINUTES = 150;
+    private static final int SLOT_STEP_MINUTES = 15;
+    private static final double PEAK_HOUR_BIAS = 0.72;
+
     private static final List<String> FEATURE_POOL = List.of(
         "Near Window",
         "Private Booth",
@@ -38,7 +52,7 @@ public class DataSeeder {
             Random random = new Random();
             List<Table> generatedTables = new ArrayList<>();
 
-            for (int i = 1; i <= 10; i++) {
+            for (int i = 1; i <= TABLE_COUNT; i++) {
                 int capacity = switch (random.nextInt(4)) {
                     case 0 -> 2;
                     case 1 -> 4;
@@ -53,21 +67,84 @@ public class DataSeeder {
 
             List<Table> savedTables = tableRepository.saveAll(generatedTables);
             List<Reservation> reservations = new ArrayList<>();
-            LocalDateTime baseTime = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0);
+            LocalDate baseDate = LocalDate.now();
 
-            for (int i = 0; i < 6; i++) {
-                Table table = savedTables.get(random.nextInt(savedTables.size()));
+            for (int dayOffset = 0; dayOffset < SEEDING_WINDOW_DAYS; dayOffset++) {
+                LocalDate reservationDate = baseDate.plusDays(dayOffset);
+                boolean weekend = isWeekend(reservationDate);
+                int dailyReservations = weekend ? WEEKEND_RESERVATIONS_PER_DAY : WEEKDAY_RESERVATIONS_PER_DAY;
+                List<LocalDateTime> possibleStarts = buildPossibleStartTimes(reservationDate, weekend);
 
-                int startOffsetHours = random.nextInt(10) - 2;
-                LocalDateTime startTime = baseTime.plusHours(startOffsetHours);
-                LocalDateTime endTime = startTime.plusHours(1 + random.nextInt(3));
+                if (possibleStarts.isEmpty()) {
+                    continue;
+                }
 
-                int guestCount = 1 + random.nextInt(table.getCapacity());
-                reservations.add(new Reservation(table, startTime, endTime, guestCount));
+                for (int i = 0; i < dailyReservations; i++) {
+                    Table table = savedTables.get(random.nextInt(savedTables.size()));
+                    LocalDateTime startTime = pickPopularStartTime(random, possibleStarts);
+                    int durationMinutes = reservationDurationMinutes(startTime);
+                    LocalDateTime endTime = startTime.plusMinutes(durationMinutes);
+
+                    int guestCount = 1 + random.nextInt(table.getCapacity());
+                    reservations.add(new Reservation(table, reservationDate, startTime, endTime, guestCount));
+                }
             }
 
             reservationRepository.saveAll(reservations);
         };
+    }
+
+    private static boolean isWeekend(LocalDate date) {
+        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        return dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
+    }
+
+    private static List<LocalDateTime> buildPossibleStartTimes(LocalDate reservationDate, boolean weekend) {
+        int closingHour = weekend ? WEEKEND_CLOSING_HOUR : WEEKDAY_CLOSING_HOUR;
+        LocalDateTime openingTime = reservationDate.atTime(OPENING_HOUR, 0);
+        LocalDateTime closingTime = reservationDate.atTime(closingHour, 0);
+
+        List<LocalDateTime> starts = new ArrayList<>();
+        for (LocalDateTime current = openingTime; current.isBefore(closingTime); current = current.plusMinutes(SLOT_STEP_MINUTES)) {
+            int durationMinutes = reservationDurationMinutes(current);
+            LocalDateTime endTime = current.plusMinutes(durationMinutes);
+            if (!endTime.isAfter(closingTime)) {
+                starts.add(current);
+            }
+        }
+
+        return starts;
+    }
+
+    private static int reservationDurationMinutes(LocalDateTime startTime) {
+        if (startTime.getHour() < 17) {
+            return MORNING_LUNCH_DURATION_MINUTES;
+        }
+
+        return EVENING_DURATION_MINUTES;
+    }
+
+    private static LocalDateTime pickPopularStartTime(Random random, List<LocalDateTime> possibleStarts) {
+        if (possibleStarts.isEmpty()) {
+            throw new IllegalArgumentException("possibleStarts must not be empty");
+        }
+
+        if (random.nextDouble() > PEAK_HOUR_BIAS) {
+            return possibleStarts.get(random.nextInt(possibleStarts.size()));
+        }
+
+        List<LocalDateTime> peakStarts = possibleStarts.stream()
+            .filter(start -> {
+                int hour = start.getHour();
+                return (hour >= 12 && hour < 15) || (hour >= 18 && hour < 21);
+            })
+            .toList();
+
+        if (peakStarts.isEmpty()) {
+            return possibleStarts.get(random.nextInt(possibleStarts.size()));
+        }
+
+        return peakStarts.get(random.nextInt(peakStarts.size()));
     }
 
     private static Set<String> randomFeatures(Random random) {

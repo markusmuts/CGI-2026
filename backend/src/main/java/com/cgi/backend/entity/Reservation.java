@@ -1,5 +1,6 @@
 package com.cgi.backend.entity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
@@ -17,6 +18,7 @@ public class Reservation {
     @ManyToOne
     private Table table;
     
+    private LocalDate reservationDate;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private int guestCount;
@@ -25,8 +27,9 @@ public class Reservation {
         // Required by JPA
     }
 
-    public Reservation(Table table, LocalDateTime startTime, LocalDateTime endTime, int guestCount) {
+    public Reservation(Table table, LocalDate reservationDate, LocalDateTime startTime, LocalDateTime endTime, int guestCount) {
         this.table = table;
+        this.reservationDate = reservationDate;
         this.startTime = startTime;
         this.endTime = endTime;
         this.guestCount = guestCount;
@@ -46,6 +49,14 @@ public class Reservation {
 
     public void setTable(Table table) {
         this.table = table;
+    }
+
+    public LocalDate getReservationDate() {
+        return reservationDate;
+    }
+
+    public void setReservationDate(LocalDate reservationDate) {
+        this.reservationDate = reservationDate;
     }
 
     public LocalDateTime getStartTime() {

@@ -9,6 +9,10 @@ I recently started using **WSL** for a more performant development experience an
 #### Step 2: Designing the Backend
 After learning the fundamentals of Spring Boot, I asked AI to generate me a good backend structure without providing me the code. Once the foundation was set, the implementation was quite straightforward. During this phase, I also verified my progress by displaying randomly generated tables in a list on the frontend, confirming that the data was flowing correctly from the database to the UI.
 
+#### Step 3: Reservation finding and filtering
+In this phase, I built the reservation availability feature by connecting frontend filters to a backend endpoint that returns available start times based on date, guest count, and optional location of the tables. The logic checks existing reservations for overlaps, applies different weekday and weekend time limits, and uses shorter daytime and longer evening reservation durations. I took inspiration from existing reservation systems to desgin my own.
+
+
 ### Hard parts
 - **Learning React and Spring Boot from scratch** - I had to read more about them and watch quite a few tutorials.
 - **Initial backend structure** - Since I was not familiar with Spring Boot, I had to do some research before coming up with the structure. I had to understand what each component does and how they work together.
@@ -18,6 +22,9 @@ After learning the fundamentals of Spring Boot, I asked AI to generate me a good
 ### References to foreign code
 #### AI generated code:
 - ``backend/src/main/java/com/cgi/backend/config/DataSeeder.java`` - everything
-- ``frontend/src/App.css`` - lines 187 to 208
+- ``backend/src/main/java/com/cgi/backend/service/TimeAvailabilityService.java`` - everything
+- ``frontend/src/App.css`` - everything
+- ``frontend/src/App.jsx`` - lines 109-180
 
-### Time spent: ≈9 hrs
+
+### Time spent: ≈12 hrs
