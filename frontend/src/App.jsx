@@ -51,6 +51,7 @@ function App() {
   const [date, setDate] = useState(getDefaultDate)
   const [guests, setGuests] = useState(2)
   const [location, setLocation] = useState('')
+  const [selectedTime, setSelectedTime] = useState('')
   const timeSections = getTimeSections(availableTimes)
 
   useEffect(() => {
@@ -89,7 +90,11 @@ function App() {
         }
 
         const data = await res.json()
-        setAvailableTimes(Array.isArray(data?.availableTimes) ? data.availableTimes : [])
+        const nextAvailableTimes = Array.isArray(data?.availableTimes) ? data.availableTimes : []
+        setAvailableTimes(nextAvailableTimes)
+        setSelectedTime((currentSelectedTime) => (
+          nextAvailableTimes.includes(currentSelectedTime) ? currentSelectedTime : ''
+        ))
       } catch (err) {
         setError(
           err instanceof Error
@@ -97,6 +102,7 @@ function App() {
             : 'Unknown error occurred.'
         )
         setAvailableTimes([])
+        setSelectedTime('')
       } finally {
         setLoading(false)
       }
@@ -119,7 +125,10 @@ function App() {
           <input
             type="date"
             value={date}
-            onChange={(event) => setDate(event.target.value)}
+            onChange={(event) => {
+              setDate(event.target.value)
+              setSelectedTime('')
+            }}
           />
         </label>
 
@@ -130,7 +139,10 @@ function App() {
             min="1"
             max="20"
             value={guests}
-            onChange={(event) => setGuests(Number(event.target.value) || 1)}
+            onChange={(event) => {
+              setGuests(Number(event.target.value) || 1)
+              setSelectedTime('')
+            }}
           />
         </label>
 
@@ -138,7 +150,10 @@ function App() {
           Location
           <select
             value={location}
-            onChange={(event) => setLocation(event.target.value)}
+            onChange={(event) => {
+              setLocation(event.target.value)
+              setSelectedTime('')
+            }}
           >
             {LOCATION_OPTIONS.map(option => (
               <option key={option.label} value={option.value}>{option.label}</option>
@@ -164,13 +179,29 @@ function App() {
                   <h2>{section.title}</h2>
                   <ul className="time-list">
                     {section.times.map(time => (
-                      <li key={`${section.key}-${time}`} className="time-chip">{time}</li>
+                      <li key={`${section.key}-${time}`}>
+                        <button
+                          type="button"
+                          className={`time-chip${selectedTime === time ? ' selected' : ''}`}
+                          onClick={() => setSelectedTime(time)}
+                        >
+                          {time}
+                        </button>
+                      </li>
                     ))}
                   </ul>
                 </section>
               ))}
             </div>
           )}
+
+        {selectedTime && !loading && !error && availableTimes.length > 0 && (
+          <div className="timeslot-cta-wrap">
+            <button type="button" className="timeslot-cta">
+              Reserve {selectedTime}
+            </button>
+          </div>
+        )}
 
         <p className="reservation-info">
           <span className="reservation-info-icon" aria-hidden="true">i</span>
