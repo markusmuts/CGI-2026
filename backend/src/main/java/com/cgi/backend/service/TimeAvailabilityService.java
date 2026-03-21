@@ -3,13 +3,18 @@ package com.cgi.backend.service;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 
 import com.cgi.backend.dto.AvailableTimesDTO;
+import com.cgi.backend.dto.TableAvailabilityDTO;
+import com.cgi.backend.dto.TableAvailabilityItemDTO;
+import com.cgi.backend.entity.Reservation;
 import com.cgi.backend.entity.Table;
 import com.cgi.backend.repository.ReservationRepository;
 import com.cgi.backend.repository.TableRepository;
@@ -39,13 +44,14 @@ public class TimeAvailabilityService {
         String normalizedLocation = location == null ? "" : location.trim();
         String normalizedLocationLower = normalizedLocation.toLowerCase(Locale.ROOT);
 
+        List<Reservation> reservationsForDate = reservationRepository.findByReservationDate(date);
         List<Table> eligibleTables = tableRepository.findAll().stream()
             .filter(table -> table.getCapacity() >= normalizedGuests)
             .filter(table -> matchesLocation(table, normalizedLocationLower))
             .toList();
 
         List<String> availableTimes = buildStartTimes(date).stream()
-            .filter(startTime -> isAnyTableAvailable(eligibleTables, startTime))
+            .filter(startTime -> isAnyTableAvailable(eligibleTables, startTime, reservationsForDate))
             .map(startTime -> startTime.format(TIME_FORMAT))
             .toList();
 
@@ -58,10 +64,145 @@ public class TimeAvailabilityService {
         );
     }
 
+    public TableAvailabilityDTO getTableAvailability(
+        LocalDate date,
+        LocalTime time,
+        int guests,
+        String location
+    ) {
+        int normalizedGuests = Math.max(1, guests);
+        String normalizedLocation = location == null ? "" : location.trim();
+        String normalizedLocationLower = normalizedLocation.toLowerCase(Locale.ROOT);
+
+        LocalDateTime startTime = LocalDateTime.of(date, time);
+        int durationMinutes = reservationDurationMinutes(startTime);
+        LocalDateTime endTime = startTime.plusMinutes(durationMinutes);
+        List<Reservation> reservationsForDate = reservationRepository.findByReservationDate(date);
+        List<Long> occupiedTableIds = findOccupiedTableIds(startTime, endTime, reservationsForDate);
+        boolean isPastStartTime = startTime.isBefore(LocalDateTime.now());
+
+        List<Table> allTables = tableRepository.findAll();
+
+        boolean hasExactCapacityOption = allTables.stream()
+            .anyMatch(table -> {
+                boolean available = table.getCapacity() >= normalizedGuests
+                    && matchesLocation(table, normalizedLocationLower)
+                    && !occupiedTableIds.contains(table.getId())
+                    && !isPastStartTime;
+
+                return available && table.getCapacity() == normalizedGuests;
+            });
+
+        List<TableAvailabilityItemDTO> initialTables = allTables.stream()
+            .map(table -> toAvailabilityItem(
+                table,
+                normalizedGuests,
+                normalizedLocationLower,
+                occupiedTableIds,
+                hasExactCapacityOption,
+                isPastStartTime
+            ))
+            .toList();
+
+        List<TableAvailabilityItemDTO> tables = applyRecommendationFallback(initialTables);
+
+        return new TableAvailabilityDTO(
+            date.toString(),
+            time.format(TIME_FORMAT),
+            normalizedGuests,
+            normalizedLocation,
+            durationMinutes,
+            tables
+        );
+    }
+
+    private TableAvailabilityItemDTO toAvailabilityItem(
+        Table table,
+        int normalizedGuests,
+        String normalizedLocationLower,
+        List<Long> occupiedTableIds,
+        boolean hasExactCapacityOption,
+        boolean isPastStartTime
+    ) {
+        int capacityDelta = table.getCapacity() - normalizedGuests;
+        boolean available = capacityDelta >= 0
+            && matchesLocation(table, normalizedLocationLower)
+            && !occupiedTableIds.contains(table.getId())
+            && !isPastStartTime;
+
+        boolean recommended = available && (
+            capacityDelta == 0
+                || (!hasExactCapacityOption && capacityDelta > 0 && capacityDelta <= 2)
+        );
+
+        double score = available ? calculateRecommendationScore(capacityDelta) : 0.0;
+
+        return new TableAvailabilityItemDTO(
+            table.getId(),
+            table.getTableNumber(),
+            table.getCapacity(),
+            table.getFeatures(),
+            available,
+            recommended,
+            score
+        );
+    }
+
+    private static List<TableAvailabilityItemDTO> applyRecommendationFallback(List<TableAvailabilityItemDTO> items) {
+        boolean hasRecommended = items.stream().anyMatch(TableAvailabilityItemDTO::recommended);
+        if (hasRecommended) {
+            return items;
+        }
+
+        List<TableAvailabilityItemDTO> availableCandidates = items.stream()
+            .filter(TableAvailabilityItemDTO::available)
+            .sorted(java.util.Comparator.comparingDouble(TableAvailabilityItemDTO::score).reversed())
+            .toList();
+
+        if (availableCandidates.isEmpty()) {
+            return items;
+        }
+
+        int fallbackCount = Math.min(3, availableCandidates.size());
+        java.util.Set<Long> fallbackIds = availableCandidates.subList(0, fallbackCount).stream()
+            .map(TableAvailabilityItemDTO::id)
+            .collect(java.util.stream.Collectors.toSet());
+
+        List<TableAvailabilityItemDTO> adjusted = new ArrayList<>(items.size());
+        for (TableAvailabilityItemDTO item : items) {
+            boolean fallbackRecommended = item.id() != null
+                && fallbackIds.contains(item.id())
+                && item.available();
+
+            adjusted.add(new TableAvailabilityItemDTO(
+                item.id(),
+                item.tableNumber(),
+                item.capacity(),
+                item.features(),
+                item.available(),
+                fallbackRecommended,
+                item.score()
+            ));
+        }
+
+        return adjusted;
+    }
+
+    private static double calculateRecommendationScore(int capacityDelta) {
+        return 100 - (capacityDelta * 18);
+    }
+
     private List<LocalDateTime> buildStartTimes(LocalDate date) {
         LocalDateTime openTime = date.atTime(OPENING_HOUR, 0);
         int closingHour = isWeekend(date) ? WEEKEND_CLOSING_HOUR : WEEKDAY_CLOSING_HOUR;
         LocalDateTime closingTime = date.atTime(closingHour, 0);
+
+        if (date.equals(LocalDate.now())) {
+            LocalDateTime roundedNow = roundUpToStep(LocalDateTime.now(), STEP_MINUTES);
+            if (roundedNow.isAfter(openTime)) {
+                openTime = roundedNow;
+            }
+        }
 
         java.util.ArrayList<LocalDateTime> starts = new java.util.ArrayList<>();
         for (LocalDateTime current = openTime; current.isBefore(closingTime); current = current.plusMinutes(STEP_MINUTES)) {
@@ -74,15 +215,48 @@ public class TimeAvailabilityService {
         return starts;
     }
 
-    private boolean isAnyTableAvailable(List<Table> eligibleTables, LocalDateTime startTime) {
+    private static LocalDateTime roundUpToStep(LocalDateTime time, int stepMinutes) {
+        int minute = time.getMinute();
+        int remainder = minute % stepMinutes;
+
+        if (remainder == 0 && time.getSecond() == 0 && time.getNano() == 0) {
+            return time.withSecond(0).withNano(0);
+        }
+
+        int addMinutes = stepMinutes - remainder;
+        return time.plusMinutes(addMinutes).withSecond(0).withNano(0);
+    }
+
+    private boolean isAnyTableAvailable(List<Table> eligibleTables, LocalDateTime startTime, List<Reservation> reservationsForDate) {
         if (eligibleTables.isEmpty()) {
             return false;
         }
 
         LocalDateTime endTime = startTime.plusMinutes(reservationDurationMinutes(startTime));
-        List<Long> occupiedTableIds = reservationRepository.findOccupiedTableIds(startTime, endTime);
+        List<Long> occupiedTableIds = findOccupiedTableIds(startTime, endTime, reservationsForDate);
 
         return eligibleTables.stream().anyMatch(table -> !occupiedTableIds.contains(table.getId()));
+    }
+
+    private List<Long> findOccupiedTableIds(
+        LocalDateTime requestedStart,
+        LocalDateTime requestedEnd,
+        List<Reservation> reservationsForDate
+    ) {
+        return reservationsForDate.stream()
+            .filter(reservation -> reservation.getTable() != null)
+            .filter(reservation -> {
+                LocalDateTime reservationStart = reservation.getStartTime();
+                if (reservationStart == null) {
+                    return false;
+                }
+
+                LocalDateTime reservationEnd = reservationStart.plusMinutes(reservationDurationMinutes(reservationStart));
+                return reservationStart.isBefore(requestedEnd) && reservationEnd.isAfter(requestedStart);
+            })
+            .map(reservation -> reservation.getTable().getId())
+            .distinct()
+            .toList();
     }
 
     private static boolean matchesLocation(Table table, String normalizedLocationLower) {

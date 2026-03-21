@@ -1,6 +1,7 @@
 package com.cgi.backend.controller;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cgi.backend.dto.AvailableTimesDTO;
+import com.cgi.backend.dto.TableAvailabilityDTO;
 import com.cgi.backend.entity.Table;
 import com.cgi.backend.repository.TableRepository;
 import com.cgi.backend.service.TimeAvailabilityService;
@@ -46,5 +48,15 @@ public class TableController {
         @RequestParam(required = false) String location
     ) {
         return timeAvailabilityService.getAvailableTimes(date, guests, location);
+    }
+
+    @GetMapping("/availability")
+    public TableAvailabilityDTO getTableAvailability(
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+        @RequestParam @DateTimeFormat(pattern = "HH:mm") LocalTime time,
+        @RequestParam int guests,
+        @RequestParam(required = false) String location
+    ) {
+        return timeAvailabilityService.getTableAvailability(date, time, guests, location);
     }
 }

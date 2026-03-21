@@ -4,10 +4,12 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +25,6 @@ import com.cgi.backend.repository.TableRepository;
 @Configuration
 public class DataSeeder {
 
-    private static final int TABLE_COUNT = 10;
     private static final int OPENING_HOUR = 9;
     private static final int WEEKDAY_CLOSING_HOUR = 22;
     private static final int WEEKEND_CLOSING_HOUR = 23;
@@ -35,37 +36,55 @@ public class DataSeeder {
     private static final int SLOT_STEP_MINUTES = 15;
     private static final double PEAK_HOUR_BIAS = 0.72;
 
-    private static final List<String> FEATURE_POOL = List.of(
-        "Near Window",
-        "Private Booth",
-        "Terrace",
-        "Middle of the Room"
+    private static final List<TableSeedSpec> TABLE_SPECS = List.of(
+        new TableSeedSpec(1, 4, "Near Window"),
+        new TableSeedSpec(2, 4, "Regular"),
+        new TableSeedSpec(3, 4, "Regular"),
+        new TableSeedSpec(4, 2, "Private Booth"),
+        new TableSeedSpec(5, 4, "Private Booth"),
+        new TableSeedSpec(6, 4, "Near Window"),
+        new TableSeedSpec(7, 2, "Regular"),
+        new TableSeedSpec(8, 6, "Regular"),
+        new TableSeedSpec(9, 2, "Regular"),
+        new TableSeedSpec(10, 8, "Private Booth"),
+        new TableSeedSpec(11, 2, "Near Window"),
+        new TableSeedSpec(12, 4, "Regular"),
+        new TableSeedSpec(13, 4, "Terrace"),
+        new TableSeedSpec(14, 4, "Terrace"),
+        new TableSeedSpec(15, 4, "Terrace")
     );
 
     @Bean
     CommandLineRunner seedData(TableRepository tableRepository, ReservationRepository reservationRepository) {
         return args -> {
-            if (tableRepository.count() > 0) {
+            Random random = new Random();
+            List<Table> existingTables = tableRepository.findAll();
+            Map<Integer, Table> existingByTableNumber = existingTables.stream()
+                .collect(Collectors.toMap(Table::getTableNumber, Function.identity(), (left, right) -> left));
+
+            List<Table> upsertedTables = new ArrayList<>();
+            for (TableSeedSpec spec : TABLE_SPECS) {
+                Table existing = existingByTableNumber.get(spec.tableNumber());
+
+                if (existing == null) {
+                    upsertedTables.add(new Table(spec.tableNumber(), spec.capacity(), Set.of(spec.feature())));
+                    continue;
+                }
+
+                existing.setCapacity(spec.capacity());
+                existing.setFeatures(Set.of(spec.feature()));
+                upsertedTables.add(existing);
+            }
+
+            if (!upsertedTables.isEmpty()) {
+                tableRepository.saveAll(upsertedTables);
+            }
+
+            if (reservationRepository.count() > 0) {
                 return;
             }
 
-            Random random = new Random();
-            List<Table> generatedTables = new ArrayList<>();
-
-            for (int i = 1; i <= TABLE_COUNT; i++) {
-                int capacity = switch (random.nextInt(4)) {
-                    case 0 -> 2;
-                    case 1 -> 4;
-                    case 2 -> 6;
-                    default -> 8;
-                };
-
-                Set<String> features = randomFeatures(random);
-
-                generatedTables.add(new Table(i, capacity, features));
-            }
-
-            List<Table> savedTables = tableRepository.saveAll(generatedTables);
+            List<Table> savedTables = tableRepository.findAll();
             List<Reservation> reservations = new ArrayList<>();
             LocalDate baseDate = LocalDate.now();
 
@@ -147,11 +166,6 @@ public class DataSeeder {
         return peakStarts.get(random.nextInt(peakStarts.size()));
     }
 
-    private static Set<String> randomFeatures(Random random) {
-        Set<String> selected = new HashSet<>();
-
-        selected.add(FEATURE_POOL.get(random.nextInt(FEATURE_POOL.size())));
-
-        return selected;
+    private record TableSeedSpec(int tableNumber, int capacity, String feature) {
     }
 }

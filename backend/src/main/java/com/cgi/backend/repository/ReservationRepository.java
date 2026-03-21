@@ -1,5 +1,6 @@
 package com.cgi.backend.repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -10,6 +11,8 @@ import org.springframework.data.repository.query.Param;
 import com.cgi.backend.entity.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+
+    List<Reservation> findByReservationDate(LocalDate reservationDate);
 
     @Query(
         """
