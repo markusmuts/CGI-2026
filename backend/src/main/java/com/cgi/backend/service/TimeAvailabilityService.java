@@ -251,7 +251,11 @@ public class TimeAvailabilityService {
                     return false;
                 }
 
-                LocalDateTime reservationEnd = reservationStart.plusMinutes(reservationDurationMinutes(reservationStart));
+                LocalDateTime reservationEnd = reservation.getEndTime();
+                if (reservationEnd == null) {
+                    reservationEnd = reservationStart.plusMinutes(reservationDurationMinutes(reservationStart));
+                }
+
                 return reservationStart.isBefore(requestedEnd) && reservationEnd.isAfter(requestedStart);
             })
             .map(reservation -> reservation.getTable().getId())
