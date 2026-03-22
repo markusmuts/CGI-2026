@@ -26,4 +26,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         @Param("startTime") LocalDateTime startTime,
         @Param("endTime") LocalDateTime endTime
     );
+
+    @Query(
+        """
+        select count(reservation) > 0
+        from Reservation reservation
+        where reservation.table.id = :tableId
+          and reservation.startTime < :endTime
+          and reservation.endTime > :startTime
+        """
+    )
+    boolean existsOverlappingReservation(
+        @Param("tableId") Long tableId,
+        @Param("startTime") LocalDateTime startTime,
+        @Param("endTime") LocalDateTime endTime
+    );
 }

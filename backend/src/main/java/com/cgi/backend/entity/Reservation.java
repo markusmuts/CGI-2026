@@ -22,17 +22,35 @@ public class Reservation {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private int guestCount;
+    private String customerName;
+    private String customerEmail;
+    private String customerPhoneNumber;
+    private String additionalInfo;
 
     protected Reservation() {
         // Required by JPA
     }
 
-    public Reservation(Table table, LocalDate reservationDate, LocalDateTime startTime, LocalDateTime endTime, int guestCount) {
+    public Reservation(
+        Table table,
+        LocalDate reservationDate,
+        LocalDateTime startTime,
+        LocalDateTime endTime,
+        int guestCount,
+        String customerName,
+        String customerEmail,
+        String customerPhoneNumber,
+        String additionalInfo
+    ) {
         this.table = table;
         this.reservationDate = reservationDate;
         this.startTime = startTime;
         this.endTime = endTime;
         this.guestCount = guestCount;
+        this.customerName = customerName;
+        this.customerEmail = customerEmail;
+        this.customerPhoneNumber = customerPhoneNumber;
+        this.additionalInfo = additionalInfo;
     }
 
     public Long getId() {
@@ -81,5 +99,37 @@ public class Reservation {
 
     public void setGuestCount(int guestCount) {
         this.guestCount = guestCount;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getCustomerEmail() {
+        return customerEmail;
+    }
+
+    public void setCustomerEmail(String customerEmail) {
+        this.customerEmail = customerEmail;
+    }
+
+    public String getCustomerPhoneNumber() {
+        return customerPhoneNumber;
+    }
+
+    public void setCustomerPhoneNumber(String customerPhoneNumber) {
+        this.customerPhoneNumber = customerPhoneNumber;
+    }
+
+    public String getAdditionalInfo() {
+        return additionalInfo;
+    }
+
+    public void setAdditionalInfo(String additionalInfo) {
+        this.additionalInfo = additionalInfo;
     }
 }
