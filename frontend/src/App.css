@@ -216,6 +216,12 @@
   color: var(--text);
 }
 
+.confirmation-contact-title {
+  margin: 4px 0 0;
+  font-size: 18px;
+  color: var(--text-h);
+}
+
 .confirmation-list {
   margin: 0;
   display: grid;
@@ -244,6 +250,92 @@
 .confirmation-actions {
   justify-content: flex-end;
   gap: 10px;
+}
+
+.confirmation-status {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.confirmation-spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  animation: confirmation-spin 0.8s linear infinite;
+}
+
+.confirmation-status.success {
+  color: #1f6f35;
+}
+
+.confirmation-complete {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 20px 10px;
+}
+
+.confirmation-success-card {
+  width: min(100%, 560px);
+  border: 1px solid #4dab60;
+  border-radius: 12px;
+  background: #f4fbf5;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.confirmation-success-list {
+  width: min(100%, 560px);
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.confirmation-success-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+}
+
+.confirmation-success-list dt {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.confirmation-success-list dd {
+  margin: 0;
+  text-align: right;
+  color: var(--text);
+}
+
+.confirmation-checkmark {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e6f6ea;
+  border: 1px solid #4dab60;
+  color: #1f6f35;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes confirmation-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .confirmation-contact-fields {
@@ -506,6 +598,16 @@
   .confirmation-actions {
     justify-content: center;
     flex-wrap: wrap;
+  }
+
+  .confirmation-success-list div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .confirmation-success-list dd {
+    text-align: left;
   }
 
   .confirmation-contact-fields {
