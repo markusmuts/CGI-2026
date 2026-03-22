@@ -15,6 +15,8 @@ In this phase, I built the reservation availability feature by connecting fronte
 #### Step 4: Displaying available tables on a floor plan
 I tried very different options but decided to create a grid from tables to display the floor plan. I also decided that I should hard code the features of the tables so the restaurant won't have, for example, seven 8-seat tables. It took some time to also make the grid visually appealing and make the app usable on smaller screens.
 
+#### Step 5: Finishing the app
+
 ### Hard parts
 - **Learning React and Spring Boot from scratch** - I had to read more about them and watch quite a few tutorials.
 - **Initial backend structure** - Since I was not familiar with Spring Boot, I had to do some research before coming up with the structure. I had to understand what each component does and how they work together.
@@ -29,6 +31,7 @@ I tried very different options but decided to create a grid from tables to displ
 - ``backend/src/main/java/com/cgi/backend/service/TimeAvailabilityService.java`` - everything
 - ``frontend/src/App.css`` - everything
 - ``frontend/src/App.jsx`` - references are in the code
+- ``frontend/src/countryCodeOptions.js`` - everything
 
 
-### Time spent: ≈16 hrs
+### Time spent: ≈18 hrs

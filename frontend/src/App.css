@@ -13,6 +13,13 @@
   justify-self: center;
 }
 
+.phase-instruction {
+  margin: -8px 0 2px;
+  text-align: center;
+  color: var(--text);
+  font-size: 15px;
+}
+
 .filter-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -146,6 +153,17 @@
   filter: brightness(0.95);
 }
 
+.secondary-cta {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.secondary-cta:hover {
+  background: var(--accent-bg);
+  filter: none;
+}
+
 .floor-plan-section {
   display: grid;
   gap: 14px;
@@ -180,6 +198,129 @@
 .floor-plan-back:hover {
   background: var(--accent-bg);
   filter: none;
+}
+
+.confirmation-section {
+  display: grid;
+  gap: 12px;
+  background: var(--bg);
+  padding: 18px;
+}
+
+.confirmation-section h2 {
+  margin: 0;
+}
+
+.confirmation-subtitle {
+  margin: 0;
+  color: var(--text);
+}
+
+.confirmation-list {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.confirmation-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.confirmation-list dt {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.confirmation-list dd {
+  margin: 0;
+  text-align: right;
+  color: var(--text);
+}
+
+.confirmation-actions {
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirmation-contact-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.confirmation-contact-fields > label:nth-child(2) {
+  margin-left: 32px;
+}
+
+.confirmation-phone-row {
+  grid-column: 1 / -1;
+}
+
+.confirmation-phone-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 170px) minmax(180px, 260px) minmax(200px, 1fr);
+  gap: 28px;
+}
+
+.country-code-input {
+  width: 100%;
+  max-width: 170px;
+}
+
+.name-input,
+.email-input {
+  width: 100%;
+  max-width: 340px;
+}
+
+.contact-number-input {
+  width: 100%;
+  max-width: 260px;
+}
+
+.optional-info-input {
+  width: 100%;
+  max-width: 320px;
+}
+
+.confirmation-contact-fields label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.confirmation-contact-fields input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.confirmation-contact-fields input[aria-invalid='true'] {
+  border-color: #d32f2f;
+}
+
+.confirmation-contact-fields input[aria-invalid='true']:focus,
+.confirmation-contact-fields input[aria-invalid='true']:focus-visible {
+  border-width: 1px;
+  border-color: #d32f2f;
+  outline: none;
+}
+
+.confirmation-contact-fields select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text-h);
 }
 
 .floor-plan-legend {
@@ -350,6 +491,33 @@
 
   .table-location {
     font-size: 8px;
+  }
+
+  .confirmation-list div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .confirmation-list dd {
+    text-align: left;
+  }
+
+  .confirmation-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .confirmation-contact-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .confirmation-contact-fields > label:nth-child(2) {
+    margin-left: 0;
+  }
+
+  .confirmation-phone-row {
+    grid-template-columns: 1fr;
   }
 
 }
